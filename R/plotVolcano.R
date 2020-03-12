@@ -12,13 +12,8 @@
 #'
 #'
 #'
-library(data.table)
-library(RColorBrewer)
-library(ggrepel)
-library(DESeq2)
 
-
-plotVolcano <- function(ps0,ps0.subset,factorOfInterest = NULL,truthFacet = NULL,alpha = NULL,baseMean = NULL){
+plotVolcano <- function(ps0,ps0.subset,factorOfInterest = NULL,truthFacet = NULL,alpha = NULL,baseMean = NULL,title = NULL,output = NULL){
 
   ##count table replacement function
   replace_counts = function(ps0, dds) {
@@ -33,27 +28,6 @@ plotVolcano <- function(ps0,ps0.subset,factorOfInterest = NULL,truthFacet = NULL
     return(ps0)
 
   }
-
-
-
-  makeColors <- function(){
-    maxColors <- 20
-    usedColors <- c()
-    possibleColors <- dichromat::colorRampPalette(brewer.pal( 9 , "Set1" ))(maxColors)
-
-    function(values){
-      newKeys <- setdiff(values, names(usedColors))
-      newColors <- possibleColors[1:length(newKeys)]
-      usedColors.new <-  c(usedColors, newColors)
-      names(usedColors.new) <- c(names(usedColors), newKeys)
-      usedColors <<- usedColors.new
-
-      possibleColors <<- possibleColors[length(newKeys)+1:maxColors]
-      usedColors
-    }
-  }
-
-  mkColor <- makeColors()
 
 
 
@@ -111,6 +85,12 @@ plotVolcano <- function(ps0,ps0.subset,factorOfInterest = NULL,truthFacet = NULL
   restable_taxa.subset <- left_join(restable.dds.subset,taxa.subset)
 
 
+  # set colors
+  l <- unique(as.factor(cleaned.table.subset$Phylum))
+  color <- colorRampPalette(brewer.pal( 9 , "Set1" ))(length(l))
+  names(color) <- l
+
+
 
   # clean the table
   cleaned.table.subset <- restable_taxa.subset %>%
@@ -119,7 +99,7 @@ plotVolcano <- function(ps0,ps0.subset,factorOfInterest = NULL,truthFacet = NULL
 
 
   outdf <- subset(cleaned.table.subset,padj < 0.05)
-  write.csv(outdf, "C:\\Users\\USER\\Handley Lab Dropbox\\leran wang\\deseq result temp\\deseq.csv")
+  write.csv(outdf, output)
 
   print("start to plot volcano plot:")
   # valcano plot
@@ -130,7 +110,7 @@ plotVolcano <- function(ps0,ps0.subset,factorOfInterest = NULL,truthFacet = NULL
                           label1 = Family,
                           label2 = Genus,
                           label3 = Phylum)) +
-    scale_fill_manual(values = mkColor(cleaned.table.subset$Phylum))+
+    scale_fill_manual(values = color)+
     geom_point(data = subset(cleaned.table.subset,cleaned.table.subset$significant == FALSE),
                color = "grey") +
     geom_point(data = subset(cleaned.table.subset,cleaned.table.subset$significant == TRUE),
@@ -139,7 +119,7 @@ plotVolcano <- function(ps0,ps0.subset,factorOfInterest = NULL,truthFacet = NULL
     geom_vline(xintercept = 0,lty = 2)+
     geom_hline(yintercept = -log10(0.05))+
     geom_text_repel(data = subset(cleaned.table.subset,cleaned.table.subset$significant == TRUE),aes(label=Family)) +
-    labs(title = paste0("By ", factorOfInterest),subtitle = paste0("alpha = ",alpha,",baseMean = ",baseMean)) +
+    labs(title = "",subtitle = paste0("alpha = ",alpha,",baseMean = ",baseMean)) +
     theme_bw() +
     theme(axis.title = element_text(size=12),
           axis.text = element_text(size=12),
@@ -172,20 +152,20 @@ plotVolcano <- function(ps0,ps0.subset,factorOfInterest = NULL,truthFacet = NULL
   print("start to plot ground truth plot:")
   # Boxplots
   p.box <- ggboxplot(df.rlog.subset, x = factorOfInterest, y="Abundance", color = "Phylum.y",outlier.shape = NA) +
-    scale_fill_manual("Phylum",values = mkColor(df.rlog.subset$Phylum.y))+
+    scale_fill_manual("Phylum",values = color)+
     geom_jitter(alpha = 0.7, width = 0.2, size = 1)+
     scale_y_log10() +
     facet_wrap(formula.truth)+
-    labs(title = "Ground Truth Plot",x = "") +
+    labs(title = "",x = "") +
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
           legend.position = "none") +
     stat_compare_means(label = "p.signif", hide.ns = TRUE) +
     labs(color='Phylum')
 
 
-  return(ggarrange(p.volcano,p.box,ncol = 2))
+  annotate_figure(ggarrange(p.volcano,p.box,ncol = 2,
+                            top = text_grob(title)))
 
 
 }
-
 

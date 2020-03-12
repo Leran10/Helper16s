@@ -97,7 +97,7 @@ plotAlpha <- function(ps0,
 
       print("parametric")
 
-      my_comparison <- list()
+      my_comparisons <- list()
 
       length <-  length(levels(as.factor(ps.meta.rich[[x]])))
 
@@ -159,7 +159,7 @@ plotAlpha <- function(ps0,
     if (!parametric){  #use wilcox.test (default one)
 
 
-      my_comparison <- list()
+      my_comparisons <- list()
 
       length <-  length(levels(as.factor(ps.meta.rich[[x]])))
 
@@ -213,7 +213,7 @@ plotAlpha <- function(ps0,
 
     }else if(paramatric){   # use t.test
 
-      my_comparison <- list()
+      my_comparisons <- list()
 
       length <-  length(levels(as.factor(ps.meta.rich[[x]])))
 
